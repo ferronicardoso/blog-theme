@@ -13,7 +13,7 @@ export default defineConfig({
   // Posts em /slug.html (servido como /slug); índices em /pasta/ — mantém as URLs do Jekyll.
   build: { format: 'preserve' },
   trailingSlash: 'ignore',
-  integrations: [sitemap({ filter: (url) => !//(busca|404)/?$/.test(url) })],
+  integrations: [sitemap({ filter: (url) => !/\/(busca|404)\/?$/.test(url) })],
   markdown: {
     shikiConfig: {
       themes: { light: 'github-light', dark: 'github-dark' },
