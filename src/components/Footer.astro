@@ -1,0 +1,37 @@
+---
+import { siGithub, siX, siFacebook, siInstagram, siWhatsapp } from 'simple-icons';
+import { brand } from '../lib/brand';
+
+const links = [
+  brand.social.github && { label: 'GitHub', href: `https://github.com/${brand.social.github}`, icon: siGithub },
+  brand.social.x && { label: 'X', href: `https://x.com/${brand.social.x}`, icon: siX },
+  brand.social.facebook && { label: 'Facebook', href: `https://facebook.com/${brand.social.facebook}`, icon: siFacebook },
+  brand.social.instagram && { label: 'Instagram', href: `https://instagram.com/${brand.social.instagram}`, icon: siInstagram },
+  brand.social.whatsapp && { label: 'WhatsApp', href: `https://chat.whatsapp.com/${brand.social.whatsapp}`, icon: siWhatsapp },
+].filter(Boolean) as { label: string; href: string; icon: { path: string } }[];
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div>
+      <strong>{brand.name}</strong><br />
+      © {year} {brand.footerText ?? 'Todos os direitos reservados.'}
+      <div class="foot-links" style="margin-top:.5rem">
+        <a href="/sobre">Sobre</a>
+        <a href="/arquivo">Arquivo</a>
+        <a href="/tags">Tags</a>
+        <a href="/rss.xml">RSS</a>
+      </div>
+    </div>
+    <ul class="social" aria-label="Redes sociais">
+      {links.map((l) => (
+        <li>
+          <a href={l.href} target="_blank" rel="noopener noreferrer" aria-label={l.label}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={l.icon.path}></path></svg>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</footer>

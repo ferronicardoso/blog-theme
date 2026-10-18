@@ -1,0 +1,18 @@
+---
+import PostCard from './PostCard.astro';
+import type { Post } from '../lib/posts';
+interface Props { posts: Post[]; page: number; totalPages: number; featuredFirst?: boolean; }
+const { posts, page, totalPages, featuredFirst = false } = Astro.props;
+const href = (n: number) => (n === 1 ? '/' : `/page/${n}/`);
+---
+
+<div class="grid">
+  {posts.map((p, i) => <PostCard post={p} featured={featuredFirst && i === 0} />)}
+</div>
+{totalPages > 1 && (
+  <nav class="pagination" aria-label="Paginação">
+    {page > 1 ? <a class="btn" rel="prev" href={href(page - 1)}>← Mais recentes</a> : <span class="btn" aria-disabled="true">← Mais recentes</span>}
+    <span style="align-self:center;color:var(--muted)">Página {page} de {totalPages}</span>
+    {page < totalPages ? <a class="btn" rel="next" href={href(page + 1)}>Mais antigos →</a> : <span class="btn" aria-disabled="true">Mais antigos →</span>}
+  </nav>
+)}

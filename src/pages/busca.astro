@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Buscar" description="Busque nos artigos." noindex>
+  <div class="container" style="max-width:48rem">
+    <header class="page-head"><h1>Buscar</h1></header>
+    <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+    <div id="search"><noscript>A busca precisa de JavaScript.</noscript></div>
+    <p id="search-unavailable" hidden style="color:var(--muted)">
+      A busca é gerada no build do site e não está disponível no modo de desenvolvimento.
+    </p>
+  </div>
+  <script is:inline>
+    (function () {
+      var s = document.createElement('script');
+      s.src = '/pagefind/pagefind-ui.js';
+      s.onload = function () {
+        new PagefindUI({ element: '#search', showSubResults: true, showImages: false, autofocus: true,
+          translations: { placeholder: 'Buscar artigos', zero_results: 'Nenhum resultado para [SEARCH_TERM]' } });
+      };
+      s.onerror = function () { document.getElementById('search-unavailable').hidden = false; };
+      document.head.appendChild(s);
+    })();
+  </script>
+</Base>

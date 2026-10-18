@@ -1,0 +1,20 @@
+---
+import { formatDate, postDescription, postUrl, readingMinutes, uniqueTags, type Post } from '../lib/posts';
+interface Props { post: Post; featured?: boolean; }
+const { post, featured = false } = Astro.props;
+const tags = uniqueTags(post).slice(0, 3);
+---
+
+<article class:list={['card', { featured }]}>
+  <div class="meta">
+    <span><time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time></span>
+    <span>{readingMinutes(post.body)} min de leitura</span>
+  </div>
+  <h3><a href={postUrl(post)}>{post.data.title}</a></h3>
+  <p>{post.data.summary ?? postDescription(post)}</p>
+  {tags.length > 0 && (
+    <ul class="tags" aria-label="Tags">
+      {tags.map((t) => <li><a class="tag" href={`/tags/${t.slug}`}>{t.name}</a></li>)}
+    </ul>
+  )}
+</article>

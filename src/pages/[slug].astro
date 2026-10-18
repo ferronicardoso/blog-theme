@@ -1,0 +1,146 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import Toc from '../components/Toc.astro';
+import { brand } from '../lib/brand';
+import { formatDate, getPosts, postDescription, postUrl, readingMinutes, relatedPosts, uniqueTags } from '../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  const pages = await getCollection('pages');
+  return [
+    ...posts.map((entry, i) => ({
+      params: { slug: entry.id },
+      // posts está do mais novo para o mais antigo
+      props: { kind: 'post' as const, entry, newer: posts[i - 1], older: posts[i + 1], posts },
+    })),
+    ...pages.map((entry) => ({ params: { slug: entry.id }, props: { kind: 'page' as const, entry } })),
+  ];
+}
+
+const props = Astro.props;
+const { Content, headings } = await render(props.entry);
+const url = new URL(`/${props.entry.id}`, brand.url).href;
+---
+
+{props.kind === 'page' ? (
+  <Base title={props.entry.data.title} description={props.entry.data.description}>
+    <div class="post-header"><div class="inner"><h1>{props.entry.data.title}</h1></div></div>
+    <div class="prose-wrap"><div class="prose"><Content /></div></div>
+  </Base>
+) : (() => {
+  const { entry, newer, older, posts } = props;
+  const tags = uniqueTags(entry);
+  const description = postDescription(entry);
+  const related = relatedPosts(entry, posts);
+  const minutes = readingMinutes(entry.body);
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: entry.data.title,
+      description,
+      url,
+      mainEntityOfPage: url,
+      datePublished: entry.data.date.toISOString(),
+      dateModified: (entry.data.updated ?? entry.data.date).toISOString(),
+      inLanguage: brand.lang,
+      keywords: tags.map((t) => t.name).join(', '),
+      timeRequired: `PT${minutes}M`,
+      author: { '@type': 'Person', name: brand.author.name, url: brand.author.url },
+      publisher: { '@type': 'Organization', name: brand.name, logo: { '@type': 'ImageObject', url: new URL(brand.logo, brand.url).href } },
+      ...(entry.data.image || brand.ogImage ? { image: new URL(entry.data.image ?? brand.ogImage!, brand.url).href } : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Início', item: brand.url + '/' },
+        { '@type': 'ListItem', position: 2, name: entry.data.title, item: url },
+      ],
+    },
+  ];
+  const hasToc = headings.filter((h) => h.depth <= 3 && h.depth >= 2).length >= 3;
+  return (
+    <Base
+      title={entry.data.title}
+      description={description}
+      image={entry.data.image}
+      type="article"
+      published={entry.data.date}
+      modified={entry.data.updated}
+      tags={tags.map((t) => t.name)}
+      jsonLd={jsonLd}
+    >
+      <article data-pagefind-body>
+        <header class="post-header">
+          <div class="inner">
+            <nav class="crumbs" aria-label="Você está em">
+              <ol><li><a href="/">Início</a></li><li aria-current="page">Artigo</li></ol>
+            </nav>
+            <h1>{entry.data.title}</h1>
+            <div class="meta">
+              <span>Por {brand.author.name}</span>
+              <span><time datetime={entry.data.date.toISOString()}>{formatDate(entry.data.date)}</time></span>
+              <span>{minutes} min de leitura</span>
+            </div>
+            {entry.data.summary && <p class="summary"><strong>Em resumo</strong>{entry.data.summary}</p>}
+          </div>
+        </header>
+
+        <div class:list={['post-layout', { 'has-toc': hasToc }]}>
+          <div class="prose-wrap">
+            <Toc headings={headings} inline />
+            <div class="prose"><Content /></div>
+
+            <footer class="post-foot">
+              {tags.length > 0 && (
+                <ul class="tags" aria-label="Tags">
+                  {tags.map((t) => <li><a class="tag" href={`/tags/${t.slug}`}>{t.name}</a></li>)}
+                </ul>
+              )}
+              <div class="author-box">
+                <span class="avatar" aria-hidden="true">{brand.author.name[0]}</span>
+                <div><strong>{brand.author.name}</strong><br /><span style="color:var(--muted)">Autor do {brand.name}</span></div>
+              </div>
+              <nav class="post-nav" aria-label="Outros artigos">
+                {older ? <a class="prev" rel="prev" href={postUrl(older)}><small>← Anterior</small>{older.data.title}</a> : <span />}
+                {newer && <a class="next" rel="next" href={postUrl(newer)}><small>Próximo →</small>{newer.data.title}</a>}
+              </nav>
+              {brand.comments?.facebook && (
+                <section class="comments" aria-label="Comentários" data-fb-comments data-href={url}></section>
+              )}
+            </footer>
+          </div>
+          {hasToc && <aside class="toc-wrap"><Toc headings={headings} /></aside>}
+        </div>
+
+        {related.length > 0 && (
+          <section class="related container">
+            <h2>Continue lendo</h2>
+            <div class="grid">{related.map((p) => <PostCard post={p} />)}</div>
+          </section>
+        )}
+      </article>
+    </Base>
+  );
+})()}
+
+<script>
+  // Comentários do Facebook: carrega o SDK só quando a seção chega perto da tela
+  const box = document.querySelector<HTMLElement>('[data-fb-comments]');
+  if (box && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      io.disconnect();
+      box.innerHTML = `<div id="fb-root"></div><div class="fb-comments" data-href="${box.dataset.href}" data-width="100%" data-numposts="10"></div>`;
+      const s = document.createElement('script');
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      s.src = 'https://connect.facebook.net/pt_BR/sdk.js#xfbml=1&version=v20.0';
+      document.body.appendChild(s);
+    }, { rootMargin: '400px' });
+    io.observe(box);
+  }
+</script>

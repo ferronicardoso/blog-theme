@@ -1,0 +1,220 @@
+---
+import '../styles/global.css';
+import { brand } from '../lib/brand';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  published?: Date;
+  modified?: Date;
+  tags?: string[];
+  noindex?: boolean;
+  jsonLd?: object[];
+}
+
+const {
+  title,
+  description = brand.description,
+  image = brand.ogImage ?? brand.hero.image,
+  type = 'website',
+  published,
+  modified,
+  tags = [],
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+const fullTitle = title ? `${title} | ${brand.name}` : `${brand.name} | ${brand.tagline}`;
+const path = Astro.url.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
+const canonical = new URL(path === '' ? '/' : path, brand.url).href;
+const imageUrl = image ? new URL(image, brand.url).href : undefined;
+
+const org = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: brand.name,
+  url: brand.url,
+  logo: new URL(brand.logo, brand.url).href,
+  sameAs: Object.entries(brand.social).map(([k, v]) => socialUrl(k, v as string)),
+};
+function socialUrl(k: string, v: string) {
+  const base: Record<string, string> = {
+    github: 'https://github.com/', x: 'https://x.com/', facebook: 'https://facebook.com/',
+    instagram: 'https://instagram.com/', whatsapp: 'https://chat.whatsapp.com/',
+  };
+  return (base[k] ?? '') + v;
+}
+const site = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: brand.name,
+  url: brand.url,
+  inLanguage: brand.lang,
+  description: brand.description,
+};
+const graphs = Astro.url.pathname === '/' || Astro.url.pathname === '/index.html' ? [site, org, ...jsonLd] : [...jsonLd];
+const { gtm, ga4 } = brand.analytics ?? {};
+const { light, dark } = brand.colors;
+---
+
+<!doctype html>
+<html lang={brand.lang} data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href={brand.favicon} />
+    <link rel="alternate" type="application/rss+xml" title={brand.name} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="color-scheme" content="light dark" />
+
+    <meta property="og:site_name" content={brand.name} />
+    <meta property="og:locale" content={brand.locale} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title ?? brand.name} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {imageUrl && <meta property="og:image" content={imageUrl} />}
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    {modified && <meta property="article:modified_time" content={modified.toISOString()} />}
+    {tags.map((t) => <meta property="article:tag" content={t} />)}
+    <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title ?? brand.name} />
+    <meta name="twitter:description" content={description} />
+    {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+    {brand.twitterHandle && <meta name="twitter:site" content={`@${brand.twitterHandle}`} />}
+    <meta name="author" content={brand.author.name} />
+
+    <style
+      set:html={`:root{--primary:${light.primary};--on-primary:${light.onPrimary};--accent:${light.accent}}:root[data-theme='dark']{--primary:${dark.primary};--on-primary:${dark.onPrimary};--accent:${dark.accent}}`}
+    ></style>
+    <!-- Define o tema antes da pintura para evitar flash -->
+    <script is:inline>
+      (function () {
+        var t;
+        try { t = localStorage.getItem('theme'); } catch (e) {}
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+
+    {graphs.map((g) => <script type="application/ld+json" set:html={JSON.stringify(g)} />)}
+
+    {gtm && (
+      <script is:inline define:vars={{ gtm }}>
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',gtm);
+      </script>
+    )}
+    {ga4 && <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`}></script>}
+    {ga4 && (
+      <script is:inline define:vars={{ ga4 }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', ga4);
+      </script>
+    )}
+  </head>
+  <body>
+    {gtm && (
+      <noscript>
+        <iframe src={`https://www.googletagmanager.com/ns.html?id=${gtm}`} height="0" width="0" style="display:none;visibility:hidden"></iframe>
+      </noscript>
+    )}
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+    <Header currentPath={path} />
+    <main id="conteudo">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Tema claro/escuro
+      document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+          document.documentElement.dataset.theme = next;
+          try { localStorage.setItem('theme', next); } catch {}
+        }),
+      );
+
+      // Menu mobile
+      const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+      const nav = document.getElementById('site-nav');
+      toggle?.addEventListener('click', () => {
+        const open = nav?.classList.toggle('open') ?? false;
+        toggle.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && nav?.classList.contains('open')) {
+          nav.classList.remove('open');
+          toggle?.setAttribute('aria-expanded', 'false');
+          toggle?.focus();
+        }
+      });
+
+      // Blocos de código: cabeçalho com a linguagem e botão de copiar
+      document.querySelectorAll<HTMLPreElement>('.prose pre.astro-code').forEach((pre) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'code-block';
+        const head = document.createElement('div');
+        head.className = 'code-head';
+        const lang = document.createElement('span');
+        const l = pre.dataset.language;
+        lang.textContent = !l || l === 'text' || l === 'plaintext' ? 'código' : l;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copiar';
+        btn.setAttribute('aria-label', 'Copiar código');
+        btn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(pre.innerText.replace(/\n$/, ''));
+            btn.textContent = 'Copiado ✓';
+          } catch {
+            btn.textContent = 'Erro';
+          }
+          setTimeout(() => (btn.textContent = 'Copiar'), 2000);
+        });
+        head.append(lang, btn);
+        pre.replaceWith(wrap);
+        wrap.append(head, pre);
+        pre.tabIndex = 0;
+      });
+
+      // Tabelas largas rolam dentro de um contêiner, sem estourar a página
+      document.querySelectorAll<HTMLTableElement>('.prose table').forEach((t) => {
+        const w = document.createElement('div');
+        w.className = 'table-scroll';
+        t.replaceWith(w);
+        w.append(t);
+      });
+
+      // Sumário: destaca a seção visível
+      const links = new Map<string, HTMLAnchorElement>();
+      document.querySelectorAll<HTMLAnchorElement>('.toc a').forEach((a) => links.set(a.hash.slice(1), a));
+      if (links.size && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                links.forEach((a) => a.classList.remove('active'));
+                links.get(e.target.id)?.classList.add('active');
+              }
+            }
+          },
+          { rootMargin: '-80px 0px -70% 0px' },
+        );
+        links.forEach((_, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+      }
+    </script>
+  </body>
+</html>

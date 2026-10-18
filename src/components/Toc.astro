@@ -1,0 +1,17 @@
+---
+interface Props { headings: { depth: number; slug: string; text: string }[]; inline?: boolean; }
+const { headings, inline = false } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{items.length >= 3 && (inline ? (
+  <details class="toc-inline">
+    <summary>Neste artigo</summary>
+    <ol>{items.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+  </details>
+) : (
+  <nav class="toc" aria-label="Neste artigo">
+    <h2>Neste artigo</h2>
+    <ol>{items.map((h) => <li class={`l${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+  </nav>
+))}

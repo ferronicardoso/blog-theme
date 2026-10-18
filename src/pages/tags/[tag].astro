@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts, groupByTag } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  return groupByTag(await getPosts()).map((t) => ({ params: { tag: t.slug }, props: { tag: t } }));
+}
+const { tag } = Astro.props;
+---
+
+<Base title={`Artigos sobre ${tag.name}`} description={`${tag.posts.length} artigo(s) marcados com ${tag.name}.`}>
+  <div class="container">
+    <header class="page-head">
+      <nav class="crumbs" aria-label="Você está em"><ol><li><a href="/tags">Tags</a></li><li aria-current="page">{tag.name}</li></ol></nav>
+      <h1>{tag.name}</h1>
+      <p>{tag.posts.length} {tag.posts.length === 1 ? 'artigo' : 'artigos'}</p>
+    </header>
+    <div class="grid" style="margin-top:1.5rem">{tag.posts.map((p) => <PostCard post={p} />)}</div>
+  </div>
+</Base>

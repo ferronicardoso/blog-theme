@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro';
+import { getPosts, groupByTag } from '../lib/posts';
+const tags = groupByTag(await getPosts());
+---
+
+<Base title="Tags" description="Explore os artigos por tema.">
+  <div class="container">
+    <header class="page-head">
+      <h1>Tags</h1>
+      <p>Explore os artigos por tema.</p>
+    </header>
+    <ul class="tag-cloud">
+      {tags.map((t) => <li><a class="tag" href={`/tags/${t.slug}`}>{t.name} <small>{t.posts.length}</small></a></li>)}
+    </ul>
+  </div>
+</Base>
