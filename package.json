@@ -7,8 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
-    "preview": "astro preview",
-    "check": "astro check"
+    "preview": "astro preview"
   },
   "keywords": [],
   "author": "",
@@ -25,8 +24,6 @@
     "simple-icons": "^16.35.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
-    "pagefind": "^1.5.2",
-    "typescript": "^7.0.2"
+    "pagefind": "^1.5.2"
   }
 }
