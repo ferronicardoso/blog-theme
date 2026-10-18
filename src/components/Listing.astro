@@ -11,8 +11,8 @@ const href = (n: number) => (n === 1 ? '/' : `/page/${n}/`);
 </div>
 {totalPages > 1 && (
   <nav class="pagination" aria-label="Paginação">
-    {page > 1 ? <a class="btn" rel="prev" href={href(page - 1)}>← Mais recentes</a> : <span class="btn" aria-disabled="true">← Mais recentes</span>}
-    <span style="align-self:center;color:var(--muted)">Página {page} de {totalPages}</span>
-    {page < totalPages ? <a class="btn" rel="next" href={href(page + 1)}>Mais antigos →</a> : <span class="btn" aria-disabled="true">Mais antigos →</span>}
+    {page > 1 ? <a class="btn" rel="prev" href={href(page - 1)}>← Recentes</a> : <span class="btn" aria-disabled="true">← Recentes</span>}
+    <span class="page-info">Página {page} de {totalPages}</span>
+    {page < totalPages ? <a class="btn" rel="next" href={href(page + 1)}>Antigos →</a> : <span class="btn" aria-disabled="true">Antigos →</span>}
   </nav>
 )}
